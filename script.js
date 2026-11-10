@@ -4,6 +4,8 @@
    Funciones e interacciones
 ===================================== */
 
+import { sendContact } from "./firebase.js";
+
 // MENÚ DE NAVEGACIÓN
 
 const menuToggle = document.getElementById("menu-toggle");
@@ -37,8 +39,8 @@ if (menuToggle && navigation) {
 const contactForm = document.getElementById("contact-form");
 const formStatus = document.getElementById("form-status");
 
-if (contactForm) {
-  contactForm.addEventListener("submit", (event) => {
+if (contactForm && formStatus) {
+  contactForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const name = document.getElementById("name").value.trim();
@@ -50,14 +52,12 @@ if (contactForm) {
     if (!name || !email || !interest || !message) {
       formStatus.textContent =
         "Por favor, completa todos los campos.";
-
       return;
     }
 
     if (!privacy) {
       formStatus.textContent =
         "Debes aceptar la política de privacidad.";
-
       return;
     }
 
@@ -66,22 +66,39 @@ if (contactForm) {
     if (!emailPattern.test(email)) {
       formStatus.textContent =
         "Introduce un correo electrónico válido.";
-
       return;
     }
 
-    // Todavía no enviamos los datos a Firebase.
-    // Lo conectaremos en el siguiente paso.
+    const submitButton = contactForm.querySelector(
+      'button[type="submit"]'
+    );
 
-    formStatus.textContent =
-      "¡Formulario validado! Estamos preparando el envío.";
+    try {
+      if (submitButton) submitButton.disabled = true;
 
-    console.log("Datos del formulario:", {
-      name,
-      email,
-      interest,
-      message
-    });
+      formStatus.textContent = "Enviando mensaje...";
+
+      await sendContact({
+        name,
+        email,
+        interest,
+        message
+      });
+
+      formStatus.textContent =
+        "¡Gracias! Hemos recibido tu mensaje. Nos pondremos en contacto contigo.";
+
+      contactForm.reset();
+
+    } catch (error) {
+      console.error("Error al enviar el formulario:", error);
+
+      formStatus.textContent =
+        "No hemos podido enviar tu mensaje. Inténtalo de nuevo más tarde.";
+
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
   });
 }
 
